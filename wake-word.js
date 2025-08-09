@@ -126,7 +126,7 @@ function recordVoiceCommand(win) {
     // Stop recording after 5 seconds
     setTimeout(() => {
         soxRecord.kill();
-    }, 5000);
+    }, 10000);
 
     soxRecord.on('close', async code => {
         console.log(`🛑 Recording stopped (code ${code})`);
@@ -175,6 +175,7 @@ function recordVoiceCommand(win) {
                         await speak(result.message);
                     }
                 } else if (gptResponse.action === "speak") {
+                    console.log("🔊 Speaking message:", gptResponse.message);
                     await speak(gptResponse.message);
                 } else {
                     await speak("Sorry, I didn’t quite understand the command.");

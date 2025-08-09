@@ -71,7 +71,7 @@ function createWindow() {
 }
 
 function traySetup() {
-  F
+
   tray = new Tray(path.join(__dirname, 'assets', 'tray-icon.png'));
   const contextMenu = Menu.buildFromTemplate([{
       label: 'Show Jarvis',

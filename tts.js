@@ -22,12 +22,19 @@ async function speak(text) {
         })
     });
 
-    const buffer = await res.buffer();
+    if (!res.ok) {
+        const error = await res.text();
+        console.error("ElevenLabs API error:", error);
+        return;
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
     const filePath = path.join(__dirname, 'response.mp3');
     fs.writeFileSync(filePath, buffer);
 
-    // Play audio using Windows default player
-    exec(`start ${filePath}`);
+    exec(`start "" "${filePath}"`);
 }
 
 module.exports = {
