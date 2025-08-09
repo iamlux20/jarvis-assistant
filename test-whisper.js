@@ -47,4 +47,4 @@ sox.on('exit', code => {
 // Stop after 5 seconds
 setTimeout(() => {
     sox.kill(); // ⛔ Force-stop recording
-}, 5000);
+}, 10000);

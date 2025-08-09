@@ -16,7 +16,8 @@ const {
   record
 } = require('node-record-lpcm16');
 const {
-  startWakeWordDetection
+  startWakeWordDetection,
+  startUserRecording
 } = require('./wake-word');
 const {
   interpretCommand
@@ -27,9 +28,19 @@ const {
 const {
   speak
 } = require('./tts');
+const {
+  getFirstYoutubeVideoId
+} = require('./youtube');
+const {
+  getAvailableDrives
+} = require('./drives');
+const {
+  exec
+} = require('child_process');
 
 let win;
 let tray = null;
+const accessKey = process.env.PICOVOICE_ACCESS_KEY;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -59,9 +70,8 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
-  createWindow();
-
+function traySetup() {
+  F
   tray = new Tray(path.join(__dirname, 'assets', 'tray-icon.png'));
   const contextMenu = Menu.buildFromTemplate([{
       label: 'Show Jarvis',
@@ -77,8 +87,11 @@ app.whenReady().then(() => {
   ]);
   tray.setToolTip('Jarvis Assistant');
   tray.setContextMenu(contextMenu);
+}
 
-  // 🔁 Simulate Wake Word Detection
+app.whenReady().then(() => {
+  createWindow();
+  traySetup();
   startWakeWordDetection(win);
 
   ipcMain.on('wake-word', async () => {
@@ -108,22 +121,59 @@ app.whenReady().then(() => {
 
       try {
         const transcript = await transcribeAudio(filePath);
-        console.log("🧠 Transcript:", transcript);
+        console.log("🎙️ Transcript:", transcript);
+        console.log("🔄 Calling interpretCommand...");
 
-        const gptResponse = await interpretCommand(transcript);
+        const gptResponse = await interpretCommand(transcript).then(async (gptResponse) => {
+          console.log("🤖 GPT Response:", gptResponse);
 
-        if (gptResponse.action === "runCommand" && gptResponse.command) {
-          const result = runCommand(gptResponse.command);
-          await speak(result.message);
-        } else if (gptResponse.action === "speak") {
-          await speak(gptResponse.message);
-        } else {
-          await speak("Sorry, I didn’t quite understand the command.");
-        }
+          if (gptResponse.action === "runCommand" && gptResponse.command) {
+            if (gptResponse.command.startsWith('start https://www.youtube.com/results?search_query=')) {
+              const query = decodeURIComponent(
+                gptResponse.command.replace('start https://www.youtube.com/results?search_query=', '')
+              ).replace(/\+/g, ' ');
+              console.log("🔍 YouTube search query:", query);
+
+              try {
+                const videoId = await getFirstYoutubeVideoId(query);
+                console.log("🎥 First videoId:", videoId);
+
+                if (videoId) {
+                  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                  console.log("🚀 Opening video URL:", videoUrl);
+
+                  exec(`start "" "${videoUrl}"`, (error) => {
+                    if (error) {
+                      console.error('❌ Failed to open YouTube video:', error);
+                    }
+                  });
+
+                  await speak(`Playing the first YouTube result for ${query}`);
+                } else {
+                  await speak("Sorry, I couldn't find any videos for that.");
+                }
+              } catch (err) {
+                console.error('❌ Error fetching YouTube video:', err);
+                await speak("Sorry, there was a problem searching YouTube.");
+              }
+            } else {
+              // Normal command execution
+              const result = runCommand(gptResponse.command);
+              await speak(result.message);
+            }
+          } else if (gptResponse.action === "speak") {
+            await speak(gptResponse.message);
+          } else {
+            await speak("Sorry, I didn’t quite understand the command.");
+          }
+
+        });
+        console.log("🤖 GPT Response:", gptResponse);
       } catch (err) {
         console.error("❌ Error during transcription or command handling:", err);
         await speak("There was an error processing your voice.");
       }
+
     });
 
     // Stop after 5 seconds

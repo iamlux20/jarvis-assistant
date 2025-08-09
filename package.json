@@ -7,12 +7,16 @@
     "start": "set DEBUG=mic && electron ."
   },
   "dependencies": {
+    "@picovoice/porcupine-node": "^3.0.6",
     "deepspeech": "^0.9.3",
     "dotenv": "^16.3.1",
     "electron": "^19.1.9",
     "form-data": "^4.0.4",
     "mic": "^2.1.2",
     "node-fetch": "^2.7.0",
-    "node-record-lpcm16": "^1.0.1"
+    "node-record-lpcm16": "^1.0.1",
+    "open": "^10.2.0",
+    "openai": "^5.12.2",
+    "say": "^0.16.0"
   }
 }

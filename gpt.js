@@ -19,15 +19,28 @@ async function interpretCommand(transcript) {
     const systemPrompt = `
 You are Jarvis, a loyal desktop assistant for a Windows developer. The user is living in the Phiippines and can speak English and Tagalog fluently. You are designed to help with development tasks, run commands, and answer questions about the user's computer.
 
-You MUST always respond in raw JSON (no markdown). Never explain.
+You MUST always respond in raw JSON with exactly one of these objects:
 
-Valid actions are:
 - { "action": "runCommand", "command": "..." }
 - { "action": "speak", "message": "..." }
 
 Examples:
 { "action": "runCommand", "command": "cd C:\\\\Projects && npm run dev" }
 { "action": "speak", "message": "The time is 9:41 PM." }
+
+For opening URLs such as YouTube or Google search, use the "runCommand" action, and the command should be:
+
+start https://www.youtube.com/results?search_query=your+search+terms
+
+or
+
+start https://www.google.com/search?q=your+search+terms
+
+Examples:
+
+{ "action": "runCommand", "command": "start https://www.google.com/search?q=weather+today" }
+{ "action": "runCommand", "command": "start https://www.youtube.com/results?search_query=latest+tech+reviews" }
+{ "action": "speak", "message": "The time is 3:30 PM." }
 
 If asked for the time, reply with the current time in JSON as a "speak" action.
 If asked something you don't understand, say you don't understand in a "speak" message.
@@ -42,7 +55,7 @@ NEVER reply in Markdown. NEVER include explanations. ONLY return a raw JSON obje
             "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            model: "gpt-4.0",
+            model: "gpt-3.5-turbo",
             temperature: 0.2,
             messages: [{
                     role: "system",
@@ -66,15 +79,32 @@ NEVER reply in Markdown. NEVER include explanations. ONLY return a raw JSON obje
         };
     }
 
+    // try {
+    //     let content = data.choices[0].message.content.trim();
+
+    //     // Strip ```json or ``` from start and end if present
+    //     if (content.startsWith("```")) {
+    //         content = content.replace(/```(json)?/gi, '').replace(/```$/, '').trim();
+    //     }
+
+    //     return JSON.parse(content);
+    // } catch (err) {
+    //     console.error("❌ GPT returned malformed JSON:", data.choices[0].message.content);
+    //     console.error("❌ JSON parsing error:", err.message);
+    //     return {
+    //         action: "speak",
+    //         message: "Sorry, I didn’t understand that command."
+    //     };
+    // }
+
     try {
         let content = data.choices[0].message.content.trim();
-
-        // Strip ```json or ``` from start and end if present
         if (content.startsWith("```")) {
             content = content.replace(/```(json)?/gi, '').replace(/```$/, '').trim();
         }
-
-        return JSON.parse(content);
+        const parsed = JSON.parse(content);
+        console.log("✅ Parsed GPT content:", parsed);
+        return parsed;
     } catch (err) {
         console.error("❌ GPT returned malformed JSON:", data.choices[0].message.content);
         console.error("❌ JSON parsing error:", err.message);
